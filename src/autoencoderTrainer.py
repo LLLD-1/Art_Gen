@@ -24,13 +24,13 @@ def evaluate(generator, discriminator, dataset, batch_size, device):
     generator = generator.to(device)
     discriminator = discriminator.to(device)
 
-    for artwork_batch in loader:
-        artwork_batch = artwork_batch.to(device)
+    for x, _, _, _ in loader:
+        x = x.to(device)
 
         # Generator Loss
         with torch.cuda.amp.autocast():
-            _, fake_images = generator(artwork_batch)
-            D_fake = discriminator(artwork_batch, fake_images)
+            _, fake_images = generator(x)
+            D_fake = discriminator(x, fake_images)
             G_fake_loss = loss(D_fake, torch.ones_like(D_fake))
             G_loss = G_fake_loss
 
@@ -70,17 +70,19 @@ def train(
     for epoch_idx in progress_bar:
 
         batch_loss = []
-        for artwork_batch in loader:
-            artwork_batch = artwork_batch.to(device)
+        for x, y, labels_x, labels_y in loader:
+            print(labels_x, labels_y)
+            x = x.to(device)
+            y = y.to(device)
 
             # Train Discriminator
             with torch.cuda.amp.autocast():
-                _, fake_images = generator(artwork_batch)
+                _, fake_images = generator(x)
 
-                D_real = discriminator(artwork_batch, artwork_batch)
+                D_real = discriminator(x, y)
                 D_real_loss = loss(D_real, torch.ones_like(D_real))
 
-                D_fake = discriminator(artwork_batch, fake_images.detach())
+                D_fake = discriminator(x, fake_images.detach())
                 D_fake_loss = loss(D_fake, torch.zeros_like(D_fake))
 
                 D_loss = (D_real_loss + D_fake_loss) / 2
@@ -91,7 +93,7 @@ def train(
 
             # Train Generator
             with torch.cuda.amp.autocast():
-                D_fake = discriminator(artwork_batch, fake_images)
+                D_fake = discriminator(x, fake_images)
                 G_fake_loss = loss(D_fake, torch.ones_like(D_fake))
                 G_loss = G_fake_loss
 
@@ -145,7 +147,7 @@ def plot_loss(train_loss_history, val_loss_history):
 
 train_proportion = 0.70
 
-dataset = ArtworkImageDataset(256)
+dataset = ArtworkImageDataset(256, pair_by='artist', pairing_scheme='positive')
 
 train_len = int(len(dataset) * train_proportion)
 val_len = len(dataset) - train_len
