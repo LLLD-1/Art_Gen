@@ -5,6 +5,7 @@ import numpy as np
 import tqdm
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
+from plotter import plot_training_metrics
 
 
 ############################################################
@@ -124,21 +125,6 @@ def train(
 
         return train_loss, val_loss
 
-
-def plot_loss(train_loss_history, val_loss_history):
-    assert len(train_loss_history) == len(val_loss_history)
-    epochs = np.arange(len(train_loss_history))
-
-    # plot the losses
-    plt.plot(epochs, train_loss_history, label="Train")
-    plt.plot(epochs, val_loss_history, label="Valid")
-    plt.xlabel("# Epochs")
-    plt.ylabel("Average Loss")
-    plt.title(f"Loss")
-    plt.grid()
-    plt.legend()
-
-
 ############################################################
 ############################################################
 #! DATASET
@@ -180,4 +166,4 @@ train_loss, val_loss = train(
     save_interval,
 )
 
-plot_loss(train_loss, val_loss)
+plot_training_metrics(train_loss, val_loss, title='Loss', y_label='Average Loss')
