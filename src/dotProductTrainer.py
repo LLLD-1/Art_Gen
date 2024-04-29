@@ -248,11 +248,3 @@ train_loss, train_accuracy, val_loss, val_accuracy = train(
 plot_training_metrics(
     train_loss, val_loss, title="Embedding Model Loss", y_label="Average Loss"
 )
-
-############################################################
-############################################################
-#! EVALUATION
-############################################################
-############################################################
-
-# plot_loss_history
