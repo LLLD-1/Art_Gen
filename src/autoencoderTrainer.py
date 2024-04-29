@@ -1,10 +1,10 @@
 import torch
-from pix2pix import Generator, Discriminator
+from pix2pix import Generator, Discriminator, Pix2PixEmbeddor
 from dataset import ArtworkImageDataset
 import numpy as np
 import tqdm
 from torch.utils.data import DataLoader, random_split
-from plotter import plot_training_metrics
+from plotter import plot_training_metrics, plot_pca
 
 
 ############################################################
@@ -170,3 +170,4 @@ train_loss, val_loss = train(
 plot_training_metrics(
     train_loss, val_loss, title="Autoencoder Loss", y_label="Average Loss"
 )
+plot_pca(Pix2PixEmbeddor(generator), group_by='artist')
