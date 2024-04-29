@@ -43,7 +43,7 @@ class EvalModel(torch.nn.Module):
 #! HELPERS
 ############################################################
 ############################################################
-def evaluate(model, dataset, batch_size, device):
+def evaluate(model, embedding_model, dataset, batch_size, device):
     loader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -62,7 +62,10 @@ def evaluate(model, dataset, batch_size, device):
         labels_x = labels_x.to(device)
         labels_y = labels_y.to(device)
 
-        predictions = model(x, y)
+        x_embed = embedding_model(x)
+        y_embed = embedding_model(y)
+
+        predictions = model(x_embed, y_embed)
         labels = labels_x.view(-1) == labels_y.view(-1)
         l = loss_fn(predictions, labels)
         loss.append(l)
@@ -113,9 +116,10 @@ def train(
             labels_x = labels_x.to(device)
             labels_y = labels_y.to(device)
 
-            x_embed = embedding_model()
+            x_embed = embedding_model(x)
+            y_embed = embedding_model(y)
 
-            predictions = model(x, y)
+            predictions = model(x_embed, y_embed)
             labels = labels_x.view(-1) == labels_y.view(-1)
             loss = loss_fn(predictions, labels)
 
