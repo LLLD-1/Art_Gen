@@ -9,21 +9,21 @@ from torchvision import transforms
 class ArtworkImageDataset(Dataset):
     def __init__(self, image_size, pair_by, pairing_scheme):
         """
-            image_size: int -> 
-                Specifies the (image_size, image_size) resolution of the image
+        image_size: int ->
+            Specifies the (image_size, image_size) resolution of the image
 
-            pair_by: 'artist' or 'style' -> 
-                Specifies how we should group up images in the dataset. For example, 
-                pair_by = 'artist' will have the dataset generate pairs (x, y) of images
-                with the same artist. For pair_by = 'style', the dataset will generate pairs
-                (x, y) of images with the same art style
+        pair_by: 'artist' or 'style' ->
+            Specifies how we should group up images in the dataset. For example,
+            pair_by = 'artist' will have the dataset generate pairs (x, y) of images
+            with the same artist. For pair_by = 'style', the dataset will generate pairs
+            (x, y) of images with the same art style
 
-            pairing_scheme: 'positive' or 'negative' or 'both' ->
-                Specifies the pairing scheme of images (x, y) in the dataset.
-                Positive means we will only have pairs (x, y) with the same grouping
-                (E.g. (x, y) have the same artist / artstyle, depending on the value of pair_by)
-                Negative means we will only have pairs (x, y) with DIFFERENT groupings
-                Both means we will have both positive and negative pairs
+        pairing_scheme: 'positive' or 'negative' or 'both' ->
+            Specifies the pairing scheme of images (x, y) in the dataset.
+            Positive means we will only have pairs (x, y) with the same grouping
+            (E.g. (x, y) have the same artist / artstyle, depending on the value of pair_by)
+            Negative means we will only have pairs (x, y) with DIFFERENT groupings
+            Both means we will have both positive and negative pairs
 
         """
         self.image_size = image_size
@@ -88,18 +88,22 @@ class ArtworkImageDataset(Dataset):
             if self.pair_by == "artist"
             else self.get_images_by_style()
         )
-        grouped_paths = [(label, list) for label, list in grouped_paths.items()] 
+        grouped_paths = [(label, list) for label, list in grouped_paths.items()]
 
-        get_positive_pairs = self.pairing_scheme == 'positive' or self.pairing_scheme == 'both'
-        get_negative_pairs = self.pairing_scheme == 'negative' or self.pairing_scheme == 'both'
+        get_positive_pairs = (
+            self.pairing_scheme == "positive" or self.pairing_scheme == "both"
+        )
+        get_negative_pairs = (
+            self.pairing_scheme == "negative" or self.pairing_scheme == "both"
+        )
         pairings = []
 
         # Positive pairs go over each list in the 2D list
         # And create all possible pairings between elements in that list
         if get_positive_pairs:
-            for (label, list) in grouped_paths:
+            for label, list in grouped_paths:
                 for i, path_i in enumerate(list):
-                    for path_j in list[i + 1:]:
+                    for path_j in list[i + 1 :]:
                         pairing_one = ((label, path_i), (label, path_j))
                         pairing_two = ((label, path_j), (label, path_i))
                         pairings.append(pairing_one)
@@ -109,9 +113,9 @@ class ArtworkImageDataset(Dataset):
         # And generates all possible pairs between those two lists
         if get_negative_pairs:
             for i, (label_i, list_i) in enumerate(grouped_paths):
-                for (label_j, list_j) in grouped_paths[i+1:]:
+                for label_j, list_j in grouped_paths[i + 1 :]:
                     for k, path_i in enumerate(list_i):
-                        for path_j in list_j[k + 1:]:
+                        for path_j in list_j[k + 1 :]:
                             pairing_one = ((label_i, path_i), (label_j, path_j))
                             pairing_two = ((label_j, path_j), (label_i, path_i))
                             pairings.append(pairing_one)
@@ -140,7 +144,7 @@ class ArtworkImageDataset(Dataset):
         image_1 = transformation(image_1)
         image_2 = torch.FloatTensor(image_2)
 
-        if self.pair_by == 'artist':
+        if self.pair_by == "artist":
             label_1 = self.artist_to_index[label_1]
             label_2 = self.artist_to_index[label_2]
         else:

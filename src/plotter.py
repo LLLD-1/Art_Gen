@@ -13,3 +13,8 @@ def plot_training_metrics(train_data, validation_data, title, y_label):
     plt.title(title)
     plt.grid()
     plt.legend()
+
+def plot_pca(dataset, embedding_model):
+    # Go over the dataset, PCA each embedding vector to dim=2
+    # Then plot the points on a graph with the colors representing the art style
+    pass

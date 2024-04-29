@@ -88,6 +88,7 @@ def train(
     batch_size,
     device,
     save_interval,
+    model_name="model",
 ):
     loader = DataLoader(
         train_dataset,
@@ -145,7 +146,7 @@ def train(
         if save_interval is not None and epoch_idx % save_interval == 0:
             torch.save(
                 model.state_dict(),
-                f"../models/evalModel/model_epoch={epoch_idx}.tar",
+                f"../models/evalModel/{model_name}_epoch={epoch_idx}.tar",
             )
 
         return train_loss, train_accuracy, val_loss, val_accuracy
@@ -204,4 +205,12 @@ train_loss, train_accuracy, val_loss, val_accuracy = train(
     save_interval,
 )
 
-plot_training_metrics(train_loss, val_loss, title="Loss", y_label="Average Loss")
+plot_training_metrics(
+    train_loss, val_loss, title="Eval Model Loss", y_label="Average Loss"
+)
+plot_training_metrics(
+    train_accuracy,
+    val_accuracy,
+    title="Eval Model Accuracy",
+    y_label="Average Accuracy",
+)

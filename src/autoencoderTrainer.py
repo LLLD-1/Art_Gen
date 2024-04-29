@@ -4,7 +4,6 @@ from dataset import ArtworkImageDataset
 import numpy as np
 import tqdm
 from torch.utils.data import DataLoader, random_split
-import matplotlib.pyplot as plt
 from plotter import plot_training_metrics
 
 
@@ -51,6 +50,7 @@ def train(
     batch_size,
     device,
     save_interval,
+    model_name="model",
 ):
     loader = DataLoader(
         train_dataset,
@@ -116,14 +116,15 @@ def train(
         if save_interval is not None and epoch_idx % save_interval == 0:
             torch.save(
                 generator.state_dict(),
-                f"../models/autoencoder/generator_epoch={epoch_idx}.tar",
+                f"../models/autoencoder/generator_{model_name}_epoch={epoch_idx}.tar",
             )
             torch.save(
                 discriminator.state_dict(),
-                f"../models/autoencoder/discriminator_epoch={epoch_idx}.tar",
+                f"../models/autoencoder/discriminator_{model_name}_epoch={epoch_idx}.tar",
             )
 
         return train_loss, val_loss
+
 
 ############################################################
 ############################################################
@@ -133,7 +134,7 @@ def train(
 
 train_proportion = 0.70
 
-dataset = ArtworkImageDataset(256, pair_by='artist', pairing_scheme='positive')
+dataset = ArtworkImageDataset(256, pair_by="artist", pairing_scheme="positive")
 
 train_len = int(len(dataset) * train_proportion)
 val_len = len(dataset) - train_len
@@ -166,4 +167,6 @@ train_loss, val_loss = train(
     save_interval,
 )
 
-plot_training_metrics(train_loss, val_loss, title='Loss', y_label='Average Loss')
+plot_training_metrics(
+    train_loss, val_loss, title="Autoencoder Loss", y_label="Average Loss"
+)
