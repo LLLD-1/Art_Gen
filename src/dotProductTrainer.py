@@ -1,5 +1,4 @@
 import torch
-import torch
 from dataset import ArtworkImageDataset
 import numpy as np
 import tqdm

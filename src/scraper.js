@@ -41,6 +41,13 @@ function WriteToFileAndDownload(filename, text) {
   document.body.removeChild(element);
 }
 
+function GetProfileName() {
+  const urlSplit = window.location.href.split("/");
+  const nameWithQuery = urlSplit[urlSplit.length - 1];
+  const queryIdx = nameWithQuery.indexOf("?");
+  return queryIdx == -1 ? nameWithQuery : nameWithQuery.slice(0, queryIdx);
+}
+
 async function ScrollAndScrape(scrollInterval, scrollDelta) {
   const artStyle = prompt("Artstyle?").toLowerCase().trim();
   const imageUrlSet = new Set(FindAllImageUrls());
@@ -74,8 +81,7 @@ async function ScrollAndScrape(scrollInterval, scrollDelta) {
     null,
     "\t"
   );
-  const urlSplit = window.location.href.split("/");
-  const profileName = urlSplit[urlSplit.length - 1];
+  const profileName = GetProfileName();
 
   WriteToFileAndDownload(profileName, fileContent);
   observer.disconnect();
