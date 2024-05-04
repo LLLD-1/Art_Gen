@@ -5,6 +5,23 @@ from torchvision.io import read_image
 import torchvision
 from torchvision import transforms
 
+def get_file_paths(directory):
+  """Gets a list of all file paths in a directory and its subdirectories.
+
+  Args:
+    directory: The directory to search.
+
+  Returns:
+    A list of all file paths in the directory and its subdirectories.
+  """
+
+  file_paths = []
+  for root, directories, files in os.walk(directory):
+    for file in files:
+      file_path = os.path.join(root, file)
+      file_paths.append(file_path)
+
+  return file_paths
 
 class ArtworkImageDataset(Dataset):
     def __init__(self, image_size, pair_by, pairing_scheme):
@@ -26,25 +43,41 @@ class ArtworkImageDataset(Dataset):
             Both means we will have both positive and negative pairs
 
         """
+        # self.image_size = image_size
+
+        # self.file_paths = []
+        # for style_directory in os.scandir("../data/images"):
+        #     sub_path = os.path.join("../data/images", style_directory)
+
+        #     for artist_directory in os.scandir(sub_path):
+        #         path = os.path.join(sub_path, artist_directory)
+        #         file_paths += [os.path.join(path, f) for f in os.scandir(path)]
+
+        # artists = [f.split("/")[-2] for f in self.file_paths]
+        # artists = list(set(artists))
+        # self.artist_to_index = {artist: artists.index(artist) for artist in artists}
+        # self.index_to_artist = {idx: artist for artist, idx in self.artist_to_index}
+
+        # styles = [f.split("/")[-3] for f in self.file_paths]
+        # styles = list(set(styles))
+        # self.style_to_index = {style: styles.index(style) for style in styles}
+        # self.index_to_style = {idx: style for style, idx in self.style_to_index}
+
+        # self.pair_by = pair_by
+        # self.pairing_scheme = pairing_scheme
+        # self.pairings = self.initialize_pairings()
         self.image_size = image_size
 
-        self.file_paths = []
-        for style_directory in os.scandir("../data/images"):
-            sub_path = os.path.join("../data/images", style_directory)
-
-            for artist_directory in os.scandir(sub_path):
-                path = os.path.join(sub_path, artist_directory)
-                file_paths += [os.path.join(path, f) for f in os.scandir(path)]
-
+        self.file_paths = get_file_paths("../data/images")
         artists = [f.split("/")[-2] for f in self.file_paths]
         artists = list(set(artists))
         self.artist_to_index = {artist: artists.index(artist) for artist in artists}
-        self.index_to_artist = {idx: artist for artist, idx in self.artist_to_index}
+        self.index_to_artist = {self.artist_to_index.get(artist): artist for artist in self.artist_to_index}
 
         styles = [f.split("/")[-3] for f in self.file_paths]
         styles = list(set(styles))
         self.style_to_index = {style: styles.index(style) for style in styles}
-        self.index_to_style = {idx: style for style, idx in self.style_to_index}
+        self.index_to_style = {self.style_to_index.get(style): style for style in self.style_to_index}
 
         self.pair_by = pair_by
         self.pairing_scheme = pairing_scheme
@@ -53,32 +86,44 @@ class ArtworkImageDataset(Dataset):
     def get_images_by_style(self):
         file_paths = {}
 
-        for style_directory in os.scandir("../data/images"):
-            file_paths[style_directory] = []
-            sub_path = os.path.join("../data/images", style_directory)
+        # for style_directory in os.scandir("../data/images"):
+        #     file_paths[style_directory] = []
+        #     sub_path = os.path.join("../data/images", style_directory)
 
-            for artist_directory in os.scandir(sub_path):
-                path = os.path.join(sub_path, artist_directory)
-                file_paths[style_directory] += [
-                    os.path.join(path, f) for f in os.scandir(path)
-                ]
+        #     for artist_directory in os.scandir(sub_path):
+        #         path = os.path.join(sub_path, artist_directory)
+        #         file_paths[style_directory] += [
+        #             os.path.join(path, f) for f in os.scandir(path)
+        #         ]
+
+        for style in self.style_to_index:
+            file_paths[style] = []
+            for img in self.file_paths:
+                if img.split("/")[-3] == style:
+                    file_paths[style].append(img)
 
         return file_paths
 
     def get_images_by_artist(self):
         file_paths = {}
 
-        for style_directory in os.scandir("../data/images"):
-            sub_path = os.path.join("../data/images", style_directory)
+        # for style_directory in os.scandir("../data/images"):
+        #     sub_path = os.path.join("../data/images", style_directory)
 
-            for artist_directory in os.scandir(sub_path):
-                if artist_directory not in file_paths:
-                    file_paths[artist_directory] = []
+        #     for artist_directory in os.scandir(sub_path):
+        #         if artist_directory not in file_paths:
+        #             file_paths[artist_directory] = []
 
-                path = os.path.join(sub_path, artist_directory)
-                file_paths[artist_directory] += [
-                    os.path.join(path, f) for f in os.scandir(path)
-                ]
+        #         path = os.path.join(sub_path, artist_directory)
+        #         file_paths[artist_directory] += [
+        #             os.path.join(path, f) for f in os.scandir(path)
+        #         ]
+
+        for artist in self.style_to_index:
+            file_paths[artist] = []
+            for img in self.file_paths:
+                if img.split("/")[-2] == artist:
+                    file_paths[artist].append(img)
 
         return file_paths
 
@@ -253,3 +298,6 @@ class ArtworkImageDatasetNoPairings(Dataset):
         artist_idx = torch.tensor(self.artist_to_index[artist])
 
         return image, artist_idx, artstyle_idx
+    
+
+
