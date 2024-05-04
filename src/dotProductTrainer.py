@@ -230,6 +230,9 @@ save_interval = 3
 
 model = EmbeddingModel(16, starting_features=16)
 
+num_params = sum([p.numel() for p in model.parameters()])
+print(f'num parameters: {num_params}')
+
 train_loss, train_accuracy, val_loss, val_accuracy = train(
     model,
     train_dataset,

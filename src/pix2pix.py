@@ -176,6 +176,7 @@ class Generator(nn.Module):
             ),
             nn.Tanh(),
         )
+        self.flatten = nn.Flatten()
 
     def forward(self, x):
         d1 = self.initial_down(x)
@@ -195,7 +196,7 @@ class Generator(nn.Module):
         up7 = self.up7(torch.cat([up6, d2], 1))
 
         # Return image + embedding
-        embedding = nn.Flatten(bottleneck)
+        embedding = self.flatten(bottleneck)
         final_image = self.final_up(torch.cat([up7, d1], 1))
         return embedding, final_image
 

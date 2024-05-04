@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 
 def is_power_2(n: int):
@@ -13,7 +14,7 @@ class SqueezeBlock(nn.Module):
             nn.Conv2d(
                 in_channels,
                 out_channels,
-                kernel_size=4,
+                kernel_size=2,
                 stride=2,
                 padding=1,
                 padding_mode="reflect",
@@ -34,7 +35,6 @@ class EmbeddingModel(nn.Module):
         dropout_prob=0.2,
         in_channels=3,
         image_size=256,
-        starting_features=16,
     ):
         """
         embedding_dimension: int ->
@@ -43,12 +43,13 @@ class EmbeddingModel(nn.Module):
         """
         super(EmbeddingModel, self).__init__()
 
-        assert is_power_2(image_size) and is_power_2(embedding_dimension)
-        assert embedding_dimension < image_size
+        assert is_power_2(image_size)
+
+        features = embedding_dimension
 
         self.initial = nn.Conv2d(
             in_channels,
-            starting_features,
+            features,
             kernel_size=4,
             stride=2,
             padding=1,
@@ -59,18 +60,36 @@ class EmbeddingModel(nn.Module):
         layers = []
 
         current_dim = image_size // 2
-        current_features = starting_features
-        while current_dim != embedding_dimension:
+        while current_dim != 0:
             layers.append(
-                SqueezeBlock(current_features, current_features, dropout_prob)
+                SqueezeBlock(features, features, dropout_prob)
             )
             current_dim //= 2
-            current_features *= 2
 
         self.squeeze = nn.Sequential(*layers)
+        self.final = nn.Conv2d(
+            features,
+            features,
+            kernel_size=2,
+            stride=1,
+            padding=0,
+        )
+        self.flatten = nn.Flatten()
 
     def forward(self, x):
         x = self.initial(x)
         x = self.squeeze(x)
-        x = nn.Flatten(x)
+        x = self.final(x)
+        x = self.flatten(x)
         return x
+
+
+def test():
+    model = EmbeddingModel(embedding_dimension=8)
+    x = torch.ones((1, 3, 256, 256))
+    e = model(x)
+    print(e.shape)
+
+
+if __name__ == '__main__':
+    test()

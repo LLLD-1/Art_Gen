@@ -155,6 +155,12 @@ save_interval = 3
 generator = Generator()
 discriminator = Discriminator()
 
+num_params_g = sum([p.numel() for p in generator.parameters()])
+num_params_d = sum([p.numel() for p in discriminator.parameters()])
+print(f'num parameters generator: {num_params_g}')
+print(f'num parameters discriminator: {num_params_d}')
+
+
 train_loss, val_loss = train(
     generator,
     discriminator,
