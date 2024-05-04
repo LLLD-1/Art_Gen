@@ -2,14 +2,23 @@ import requests
 import os
 import json
 
+def doesArtistDirExist(artist):
+  for styleDir in os.scandir('../data/images'):
+    artists = list(os.scandir(styleDir.path))
+    artists = [p.name for p in artists]
+
+    if artist in artists:
+      return True
+
+  return False
 def stripFileExtension(file):
-  return file.split('.')[0]
+  return '.'.join(file.split('.')[:-1])
 
 def getAllJsonInDirectory(directory):
   data = []
 
   for file in os.scandir(directory):
-    print(file.path)
+
     with open(file.path) as f:
         jsonData = json.load(f)
         jsonData['artist_name'] = stripFileExtension(file.name)
@@ -19,7 +28,11 @@ def getAllJsonInDirectory(directory):
 
 jsonFiles = getAllJsonInDirectory('../data/links')
 
+filter_fn = lambda j: not doesArtistDirExist(j['artist_name'])
+jsonFiles = filter(filter_fn, jsonFiles)
+
 for jsonFile in jsonFiles:
+  print(jsonFile['artist_name'])
   artStyle = jsonFile['artStyle']
 
   directoryStyle = f'../data/images/{artStyle}'

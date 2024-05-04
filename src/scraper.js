@@ -48,7 +48,7 @@ function GetProfileName() {
   return queryIdx == -1 ? nameWithQuery : nameWithQuery.slice(0, queryIdx);
 }
 
-async function ScrollAndScrape(scrollInterval, scrollDelta) {
+async function ScrollAndScrape(scrollInterval, scrollDelta, timeLimit = null) {
   const artStyle = prompt("Artstyle?").toLowerCase().trim();
   const imageUrlSet = new Set(FindAllImageUrls());
 
@@ -64,13 +64,19 @@ async function ScrollAndScrape(scrollInterval, scrollDelta) {
   const config = { childList: true, subtree: true };
   observer.observe(document.body, config);
 
+  const startTime = new Date().getTime();
   while (true) {
     const heightBefore = window.scrollY;
     window.scrollBy(0, scrollDelta);
     const heightAfter = window.scrollY;
+
     console.log(heightBefore, heightAfter);
 
     if (heightAfter - heightBefore <= 1) break;
+
+    const currentTime = new Date().getTime();
+    const elapsedTime = (currentTime - startTime) / 1000;
+    if (timeLimit != null && elapsedTime > timeLimit) break;
 
     await sleep(scrollInterval);
   }
@@ -87,4 +93,4 @@ async function ScrollAndScrape(scrollInterval, scrollDelta) {
   observer.disconnect();
 }
 
-ScrollAndScrape(1500, 500);
+ScrollAndScrape(1500, 500, 10);
