@@ -1,7 +1,7 @@
 import torch
 from dataset import ArtworkImageDataset
 import numpy as np
-import tqdm
+from tqdm import tqdm
 from torch.utils.data import DataLoader, random_split
 from plotter import plot_training_metrics, plot_pca
 from embeddingModel import EmbeddingModel
@@ -122,7 +122,7 @@ def train(
     train_loss = []
     val_loss = []
 
-    progress_bar = tqdm(epochs)
+    progress_bar = tqdm(range(epochs))
     for epoch_idx in progress_bar:
 
         batch_loss = []
@@ -134,12 +134,12 @@ def train(
 
             # Group inputs into positive and negative pairs
             positive_pairs_indices = labels_x == labels_y
-            x_positive = torch.index_select(x, 0, positive_pairs_indices)
-            y_positive = torch.index_select(y, 0, positive_pairs_indices)
+            x_positive = x[positive_pairs_indices]
+            y_positive = y[positive_pairs_indices]
 
             negative_pairs_indices = labels_x != labels_y
-            x_negative = torch.index_select(x, 0, negative_pairs_indices)
-            y_negative = torch.index_select(y, 0, negative_pairs_indices)
+            x_negative = x[negative_pairs_indices]
+            y_negative = y[negative_pairs_indices]
 
             # Create the embeddings
             x_positive_embedd = model(x_positive)
@@ -165,6 +165,8 @@ def train(
             params = torch.cat([p.view(-1) for p in model.parameters()])
             norm = torch.norm(params, 2)
             loss += regularizer_weight * norm
+
+            print(loss)
 
             # And backpropagate it
             loss.backward()
@@ -228,7 +230,7 @@ negative_weight = 0.5
 regularizer_weight = 0.1
 save_interval = 3
 
-model = EmbeddingModel(16, starting_features=16)
+model = EmbeddingModel(embedding_dimension=16)
 
 num_params = sum([p.numel() for p in model.parameters()])
 print(f'num parameters: {num_params}')

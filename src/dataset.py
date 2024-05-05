@@ -4,7 +4,7 @@ import os
 from torchvision.io import read_image
 import torchvision
 from torchvision import transforms
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 def get_file_paths(directory):
   """Gets a list of all file paths in a directory and its subdirectories.
@@ -24,8 +24,17 @@ def get_file_paths(directory):
 
   return file_paths
 
+def validate_images(file_paths):
+    for path in file_paths:
+        try:
+            _ = Image.open(path)
+        except UnidentifiedImageError as e:
+            print(f"Error in file {path}: {e}")
+            os.remove(path)
+            print(f"Removed file {path}")
+
 class ArtworkImageDataset(Dataset):
-    def __init__(self, image_size, pair_by, pairing_scheme, pair_limit=100):
+    def __init__(self, image_size, pair_by, pairing_scheme, pair_limit=100, balanced=True):
         """
         image_size: int ->
             Specifies the (image_size, image_size) resolution of the image
@@ -59,7 +68,7 @@ class ArtworkImageDataset(Dataset):
 
         self.pair_by = pair_by
         self.pairing_scheme = pairing_scheme
-        self.pairings = self.initialize_pairings(pair_limit)
+        self.pairings = self.initialize_pairings(pair_limit, balanced)
 
     def get_images_by_style(self):
         file_paths = {}
@@ -83,7 +92,7 @@ class ArtworkImageDataset(Dataset):
 
         return file_paths
 
-    def initialize_pairings(self, pair_limit):
+    def initialize_pairings(self, pair_limit, balanced):
         # Get paths grouped by artist or artstyle
         # Then turn it into a 2D list
         grouped_paths = (
@@ -99,8 +108,11 @@ class ArtworkImageDataset(Dataset):
         get_negative_pairs = (
             self.pairing_scheme == "negative" or self.pairing_scheme == "both"
         )
-        pairings = []
 
+        pos_pairings = []
+        neg_pairings = []
+        pairings = []
+        
         # Positive pairs go over each list in the 2D list
         # And create all possible pairings between elements in that list
         if get_positive_pairs:
@@ -114,8 +126,8 @@ class ArtworkImageDataset(Dataset):
                     for path_j in list[i + 1 :]:
                         pairing_one = ((label, path_i), (label, path_j))
                         pairing_two = ((label, path_j), (label, path_i))
-                        pairings.append(pairing_one)
-                        pairings.append(pairing_two)
+                        pos_pairings.append(pairing_one)
+                        pos_pairings.append(pairing_two)
                         num_pairs += 2
 
         # Negative pairs go over each pair of lists in the 2D list
@@ -132,11 +144,18 @@ class ArtworkImageDataset(Dataset):
                         for path_j in list_j[k + 1 :]:
                             pairing_one = ((label_i, path_i), (label_j, path_j))
                             pairing_two = ((label_j, path_j), (label_i, path_i))
-                            pairings.append(pairing_one)
-                            pairings.append(pairing_two)
+                            neg_pairings.append(pairing_one)
+                            neg_pairings.append(pairing_two)
                             num_pairs += 2
 
-        return pairings
+        #Ensure equal number of positive and negative pairs
+        if balanced:
+            if len(pos_pairings) > len(neg_pairings):
+                pos_pairings = pos_pairings[:len(neg_pairings)]
+            else:
+                neg_pairings = neg_pairings[:len(pos_pairings)]
+
+        return pos_pairings + neg_pairings
     
     def label_index_to_name(self, type, index):
         """
@@ -269,10 +288,6 @@ class ArtworkImageDatasetNoPairings(Dataset):
     
 def test():
     dataset = ArtworkImageDataset(256, pair_by='artist', pairing_scheme='positive')
-    print(len(dataset))
-    _, _, l1, l2 = dataset[0]
-    print(l1, l2)
-
 
 if __name__ == '__main__':
     test()
