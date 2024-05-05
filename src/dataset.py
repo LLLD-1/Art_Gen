@@ -4,6 +4,7 @@ import os
 from torchvision.io import read_image
 import torchvision
 from torchvision import transforms
+from PIL import Image
 
 def get_file_paths(directory):
   """Gets a list of all file paths in a directory and its subdirectories.
@@ -24,7 +25,7 @@ def get_file_paths(directory):
   return file_paths
 
 class ArtworkImageDataset(Dataset):
-    def __init__(self, image_size, pair_by, pairing_scheme):
+    def __init__(self, image_size, pair_by, pairing_scheme, pair_limit=100):
         """
         image_size: int ->
             Specifies the (image_size, image_size) resolution of the image
@@ -43,29 +44,6 @@ class ArtworkImageDataset(Dataset):
             Both means we will have both positive and negative pairs
 
         """
-        # self.image_size = image_size
-
-        # self.file_paths = []
-        # for style_directory in os.scandir("../data/images"):
-        #     sub_path = os.path.join("../data/images", style_directory)
-
-        #     for artist_directory in os.scandir(sub_path):
-        #         path = os.path.join(sub_path, artist_directory)
-        #         file_paths += [os.path.join(path, f) for f in os.scandir(path)]
-
-        # artists = [f.split("/")[-2] for f in self.file_paths]
-        # artists = list(set(artists))
-        # self.artist_to_index = {artist: artists.index(artist) for artist in artists}
-        # self.index_to_artist = {idx: artist for artist, idx in self.artist_to_index}
-
-        # styles = [f.split("/")[-3] for f in self.file_paths]
-        # styles = list(set(styles))
-        # self.style_to_index = {style: styles.index(style) for style in styles}
-        # self.index_to_style = {idx: style for style, idx in self.style_to_index}
-
-        # self.pair_by = pair_by
-        # self.pairing_scheme = pairing_scheme
-        # self.pairings = self.initialize_pairings()
         self.image_size = image_size
 
         self.file_paths = get_file_paths("../data/images")
@@ -81,22 +59,12 @@ class ArtworkImageDataset(Dataset):
 
         self.pair_by = pair_by
         self.pairing_scheme = pairing_scheme
-        self.pairings = self.initialize_pairings()
+        self.pairings = self.initialize_pairings(pair_limit)
 
     def get_images_by_style(self):
         file_paths = {}
 
-        # for style_directory in os.scandir("../data/images"):
-        #     file_paths[style_directory] = []
-        #     sub_path = os.path.join("../data/images", style_directory)
-
-        #     for artist_directory in os.scandir(sub_path):
-        #         path = os.path.join(sub_path, artist_directory)
-        #         file_paths[style_directory] += [
-        #             os.path.join(path, f) for f in os.scandir(path)
-        #         ]
-
-        for style in self.style_to_index:
+        for style in self.style_to_index.keys():
             file_paths[style] = []
             for img in self.file_paths:
                 if img.split("/")[-3] == style:
@@ -107,19 +75,7 @@ class ArtworkImageDataset(Dataset):
     def get_images_by_artist(self):
         file_paths = {}
 
-        # for style_directory in os.scandir("../data/images"):
-        #     sub_path = os.path.join("../data/images", style_directory)
-
-        #     for artist_directory in os.scandir(sub_path):
-        #         if artist_directory not in file_paths:
-        #             file_paths[artist_directory] = []
-
-        #         path = os.path.join(sub_path, artist_directory)
-        #         file_paths[artist_directory] += [
-        #             os.path.join(path, f) for f in os.scandir(path)
-        #         ]
-
-        for artist in self.style_to_index:
+        for artist in self.artist_to_index.keys():
             file_paths[artist] = []
             for img in self.file_paths:
                 if img.split("/")[-2] == artist:
@@ -127,7 +83,7 @@ class ArtworkImageDataset(Dataset):
 
         return file_paths
 
-    def initialize_pairings(self):
+    def initialize_pairings(self, pair_limit):
         # Get paths grouped by artist or artstyle
         # Then turn it into a 2D list
         grouped_paths = (
@@ -149,24 +105,36 @@ class ArtworkImageDataset(Dataset):
         # And create all possible pairings between elements in that list
         if get_positive_pairs:
             for label, list in grouped_paths:
+
+                num_pairs = 0
                 for i, path_i in enumerate(list):
+                    if (not pair_limit is None) and num_pairs >= pair_limit:
+                        break
+        
                     for path_j in list[i + 1 :]:
                         pairing_one = ((label, path_i), (label, path_j))
                         pairing_two = ((label, path_j), (label, path_i))
                         pairings.append(pairing_one)
                         pairings.append(pairing_two)
+                        num_pairs += 2
 
         # Negative pairs go over each pair of lists in the 2D list
         # And generates all possible pairs between those two lists
         if get_negative_pairs:
             for i, (label_i, list_i) in enumerate(grouped_paths):
                 for label_j, list_j in grouped_paths[i + 1 :]:
+
+                    num_pairs = 0
                     for k, path_i in enumerate(list_i):
+                        if (not pair_limit is None) and num_pairs >= pair_limit:
+                            break
+
                         for path_j in list_j[k + 1 :]:
                             pairing_one = ((label_i, path_i), (label_j, path_j))
                             pairing_two = ((label_j, path_j), (label_i, path_i))
                             pairings.append(pairing_one)
                             pairings.append(pairing_two)
+                            num_pairs += 2
 
         return pairings
     
@@ -191,8 +159,8 @@ class ArtworkImageDataset(Dataset):
 
     def __getitem__(self, idx):
         (label_1, path_1), (label_2, path_2) = self.pairings[idx]
-        image_1 = read_image(path_1)
-        image_2 = read_image(path_2)
+        image_1 = Image.open(path_1)
+        image_2 = Image.open(path_2)
 
         transformation = transforms.Compose(
             [
@@ -205,7 +173,7 @@ class ArtworkImageDataset(Dataset):
         )
 
         image_1 = transformation(image_1)
-        image_2 = torch.FloatTensor(image_2)
+        image_2 = transformation(image_2)
 
         if self.pair_by == "artist":
             label_1 = torch.tensor(self.artist_to_index[label_1])
@@ -277,7 +245,7 @@ class ArtworkImageDatasetNoPairings(Dataset):
         
     def __getitem__(self, idx):
         path = self.file_paths[idx]
-        image = read_image(path)
+        image = Image.open(path)
 
         transformation = transforms.Compose(
             [
@@ -299,5 +267,13 @@ class ArtworkImageDatasetNoPairings(Dataset):
 
         return image, artist_idx, artstyle_idx
     
+def test():
+    dataset = ArtworkImageDataset(256, pair_by='artist', pairing_scheme='positive')
+    print(len(dataset))
+    _, _, l1, l2 = dataset[0]
+    print(l1, l2)
 
+
+if __name__ == '__main__':
+    test()
 
