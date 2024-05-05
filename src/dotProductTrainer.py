@@ -27,6 +27,8 @@ def dot_product_loss(x, y, mode):
 
     We then sum all those dot products up using torch.sum
     """
+    x = (x + 1) / 2
+    y = (y + 1) / 2
     x_t = torch.transpose(x, 0, 1)
     norm = torch.sum(torch.matmul(x_t, y))
 
@@ -122,11 +124,10 @@ def train(
     train_loss = []
     val_loss = []
 
-    progress_bar = tqdm(range(epochs))
-    for epoch_idx in progress_bar:
+    for epoch_idx in range(epochs):
 
         batch_loss = []
-        for x, y, labels_x, labels_y in loader:
+        for x, y, labels_x, labels_y in tqdm(loader):
             x = x.to(device)
             y = y.to(device)
             labels_x = labels_x.to(device)
@@ -166,8 +167,6 @@ def train(
             norm = torch.norm(params, 2)
             loss += regularizer_weight * norm
 
-            print(loss)
-
             # And backpropagate it
             loss.backward()
             optimizer.step()
@@ -187,9 +186,9 @@ def train(
         )
         val_loss.append(val_l)
 
-        if epoch_idx % 3 == 0:
-            mean_loss = np.array(loss).mean()
-            progress_bar.set_postfix(mean_loss)
+
+        mean_loss = np.array(loss).mean()
+        print(f'End of epoch {epoch_idx}\ntrain loss: {mean_loss}\nval_loss: {val_l}\n\n')
 
         if save_interval is not None and epoch_idx % save_interval == 0:
             torch.save(
@@ -209,7 +208,8 @@ def train(
 train_proportion = 0.70
 
 # TODO: Try 'positive' and 'both' pairing schemes
-dataset = ArtworkImageDataset(256, pair_by="artist", pairing_scheme="both")
+dataset = ArtworkImageDataset(256, pair_by="artist", pairing_scheme="both", pair_limit=10)
+print(f'dataset size: {len(dataset)}')
 
 train_len = int(len(dataset) * train_proportion)
 val_len = len(dataset) - train_len
@@ -224,7 +224,7 @@ train_dataset, val_dataset = random_split(dataset, [train_len, val_len])
 device = "cuda"
 epochs = 10
 lr = 0.001
-batch_size = 16
+batch_size = 32
 positive_weight = 1
 negative_weight = 0.5
 regularizer_weight = 0.1
