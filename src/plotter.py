@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader
-from dataset import ArtworkImageDatasetNoPairings
+from src.dataset import ArtworkImageDatasetNoPairings
 from tqdm import tqdm
 
 
